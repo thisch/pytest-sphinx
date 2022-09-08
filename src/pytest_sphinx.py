@@ -5,6 +5,8 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 * TODO
 ** CLEANUP: use the sphinx directive parser from the sphinx project
 """
+from __future__ import annotations
+
 import doctest
 import enum
 import re
@@ -14,12 +16,7 @@ import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
 from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 import _pytest.doctest
 import pytest
@@ -61,24 +58,24 @@ _DIRECTIVES_W_SKIPIF = (
 
 
 def pytest_collect_file(
-    file_path: Path, parent: Union[Session, Package]
-) -> Optional[Union["SphinxDoctestModule", "SphinxDoctestTextfile"]]:
+    file_path: Path, parent: Session | Package
+) -> SphinxDoctestModule | SphinxDoctestTextfile | None:
     config = parent.config
     if file_path.suffix == ".py":
         if config.option.doctestmodules:
-            mod: Union[
-                "SphinxDoctestModule", "SphinxDoctestTextfile"
-            ] = SphinxDoctestModule.from_parent(parent, path=file_path)
+            mod: SphinxDoctestModule | SphinxDoctestTextfile = (
+                SphinxDoctestModule.from_parent(parent, path=file_path)
+            )
             return mod
     elif _is_doctest(config, file_path, parent):
         return SphinxDoctestTextfile.from_parent(parent, path=file_path)  # type: ignore
     return None
 
 
-GlobDict = Dict[str, Any]
+GlobDict = dict[str, Any]
 
 
-def _is_doctest(config: Config, path: Path, parent: Union[Session, Package]) -> bool:
+def _is_doctest(config: Config, path: Path, parent: Session | Package) -> bool:
     if path.suffix in (".txt", ".rst") and parent.session.isinitpath(path):
         return True
     globs = config.getoption("doctestglob") or ["test*.txt"]
@@ -109,7 +106,7 @@ _DIRECTIVE_RE = re.compile(
 
 def _split_into_body_and_options(
     section_content: str,
-) -> Tuple[str, Optional[str], Dict[int, bool]]:
+) -> tuple[str, str | None, dict[int, bool]]:
     """Parse the the full content of a directive and split it.
 
     It is split into a string, where the options (:options:, :hide: and
@@ -185,7 +182,7 @@ def _split_into_body_and_options(
 
 
 def _get_next_textoutputsections(
-    sections: List["Section"], index: int
+    sections: list["Section"], index: int
 ) -> Iterator["Section"]:
     """Yield successive TESTOUTPUT sections."""
     for j in range(index, len(sections)):
@@ -196,7 +193,7 @@ def _get_next_textoutputsections(
             break
 
 
-SectionGroups = Optional[List[str]]
+SectionGroups = list[str] | None
 
 
 class Section:
@@ -222,7 +219,7 @@ class Section:
         self.options = options
 
 
-def get_sections(docstring: str) -> List[Union[Any, Section]]:
+def get_sections(docstring: str) -> list[Any | Section]:
     lines = textwrap.dedent(docstring).splitlines()
     sections = []
 
@@ -272,8 +269,8 @@ def get_sections(docstring: str) -> List[Union[Any, Section]]:
 
 
 def docstring2examples(
-    docstring: str, globs: Optional[GlobDict] = None
-) -> List[Union[Any, doctest.Example]]:
+    docstring: str, globs: GlobDict | None = None
+) -> list[Any | doctest.Example]:
     """
     Parse all sphinx test directives in the docstring and create a
     list of examples.
@@ -287,10 +284,10 @@ def docstring2examples(
 
     def get_testoutput_section_data(
         section: "Section",
-    ) -> Tuple[str, Dict[int, bool], int, Optional[Any]]:
+    ) -> tuple[str, dict[int, bool], int, Any | None]:
         want = section.body
         exc_msg = None
-        options: Dict[int, bool] = {}
+        options: dict[int, bool] = {}
 
         if section.skipif_expr and eval(section.skipif_expr, globs):
             want = ""
@@ -502,7 +499,7 @@ class SphinxDocTestParser:
     def get_doctest(
         self,
         docstring: str,
-        globs: Dict[str, Any],
+        globs: dict[str, Any],
         name: str,
         filename: str,
         lineno: int,
@@ -583,13 +580,13 @@ class SphinxDoctestModule(pytest.Module):
 
             def _find(
                 self,
-                tests: List[doctest.DocTest],
+                tests: list[doctest.DocTest],
                 obj: str,
                 name: str,
                 module: Any,
-                source_lines: Optional[List[str]],
+                source_lines: list[str] | None,
                 globs: GlobDict,
-                seen: Dict[int, int],
+                seen: dict[int, int],
             ) -> None:
                 if _is_mocked(obj):
                     return
