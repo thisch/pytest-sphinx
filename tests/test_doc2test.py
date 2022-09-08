@@ -8,9 +8,10 @@ from pytest_sphinx import docstring2examples
 from pytest_sphinx import get_sections
 
 
-@pytest.mark.parametrize("in_between_content", ["", "\nsome text\nmore text"])
-def test_simple(in_between_content: str) -> None:
-    doc = """
+@pytest.mark.parametrize(
+    "doc",
+    [
+        """
 .. testcode::
 
     import pprint
@@ -20,9 +21,27 @@ def test_simple(in_between_content: str) -> None:
 
     {{'3': 4,
      '5': 6}}
-""".format(
-        in_between_content
-    )
+""",
+        """
+```{{eval-rst}}
+.. testcode::
+
+    import pprint
+    pprint.pprint({{'3': 4, '5': 6}})
+```
+{}
+```{{eval-rst}}
+.. testoutput::
+
+    {{'3': 4,
+     '5': 6}}
+```
+""",
+    ],
+)
+@pytest.mark.parametrize("in_between_content", ["", "\nsome text\nmore text"])
+def test_simple(doc: str, in_between_content: str) -> None:
+    doc = doc.format(in_between_content)
 
     examples = docstring2examples(doc)
     assert len(examples) == 1
@@ -34,8 +53,10 @@ def test_simple(in_between_content: str) -> None:
     assert example.lineno == 5
 
 
-def test_with_options() -> None:
-    doc = """
+@pytest.mark.parametrize(
+    "doc",
+    [
+        """
 .. testcode::
 
     import pprint
@@ -45,8 +66,27 @@ def test_with_options() -> None:
     :options: +NORMALIZE_WHITESPACE, +ELLIPSIS
 
     {'3': 4,
-     '5': 6}"""
+     '5': 6}""",
+        """
+```{eval-rst}
+.. testcode::
 
+    import pprint
+    pprint.pprint({'3': 4, '5': 6})
+```
+
+```{eval-rst}
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE, +ELLIPSIS
+
+    {'3': 4,
+     '5': 6}
+```
+""",
+    ],
+    ids=["rst", "myst-eval-rst"],
+)
+def test_with_options(doc: str) -> None:
     examples = docstring2examples(doc)
     assert len(examples) == 1
     example = examples[0]
@@ -61,9 +101,11 @@ def test_with_options() -> None:
     assert example.lineno == 5
 
 
-def test_indented() -> None:
-    doc = textwrap.dedent(
-        """
+@pytest.mark.parametrize(
+    "doc",
+    [
+        textwrap.dedent(
+            """
     Examples:
         some text
 
@@ -75,8 +117,29 @@ def test_indented() -> None:
 
             Banana
     """
-    )
+        ),
+        textwrap.dedent(
+            """
+    Examples:
+        some text
 
+        ```{eval-rst}
+        .. testcode::
+
+            print("Banana")
+        ```
+
+        ```{eval-rst}
+        .. testoutput::
+
+            Banana
+        ```
+    """
+        ),
+    ],
+    ids=["rst", "myst-eval-rst"],
+)
+def test_indented(doc: str) -> None:
     examples = docstring2examples(doc)
     assert len(examples) == 1
     example = examples[0]
@@ -87,9 +150,10 @@ def test_indented() -> None:
     assert example.lineno == 7
 
 
-def test_cartopy() -> None:
+@pytest.mark.parametrize("file_type", ["rst", "md"])
+def test_cartopy(file_type: str) -> None:
     rstpath = os.path.join(
-        os.path.dirname(__file__), "testdata", "using_the_shapereader.rst"
+        os.path.dirname(__file__), "testdata", f"using_the_shapereader.{file_type}"
     )
     with open(rstpath) as fh:
         sections = get_sections(fh.read())
