@@ -42,6 +42,9 @@ lint = [
     "black",
     "mypy"
 ]
+myst-parser = [
+    "myst-parser"
+]
 
 [project.urls]
 homepage = "https://github.com/thisch/pytest-sphinx"

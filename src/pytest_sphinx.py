@@ -80,7 +80,7 @@ GlobDict = Dict[str, Any]
 
 
 def _is_doctest(config: Config, path: Path, parent: Union[Session, Package]) -> bool:
-    if path.suffix in (".txt", ".rst") and parent.session.isinitpath(path):
+    if path.suffix in (".txt", ".rst", ".md") and parent.session.isinitpath(path):
         return True
     globs = config.getoption("doctestglob") or ["test*.txt"]
     assert isinstance(globs, list)
@@ -98,6 +98,7 @@ _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
 _DIRECTIVE_RE = re.compile(
     r"""
+    (?P<myst_directive>`{3}{eval-rst}\n?)?
     \s*\.\.\s
     (?P<directive>(testcode|testoutput|testsetup|testcleanup|doctest))
     ::\s*
